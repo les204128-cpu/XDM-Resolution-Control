@@ -1,11 +1,10 @@
-name: Build XDM Android APK
+name: Build Android APK
 
 on:
   workflow_dispatch:
   push:
-    paths:
-      - "XDM_Resolution_Control_Source.zip"
-      - ".github/workflows/build.yml"
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -24,30 +23,26 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.9"
-
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
       - name: Install Android SDK
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Extract source
         run: |
-          unzip -q XDM_Resolution_Control_Source.zip -d extracted
-          test -f extracted/xdmapp/settings.gradle.kts
+          unzip -o XDM_Resolution_Control_Source.zip -d source
+          ls -la source
 
       - name: Build APK
-        working-directory: extracted/xdmapp
-        run: gradle assembleDebug --no-daemon
+        working-directory: source
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
 
       - name: Save APK
         uses: actions/upload-artifact@v4
         with:
           name: XDM-Resolution-Control-APK
-          path: extracted/xdmapp/app/build/outputs/apk/debug/app-debug.apk
+          path: source/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
-          retention-days: 7
